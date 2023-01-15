@@ -1,0 +1,12 @@
+{
+  "name": "com.iup.dialogue-system",
+  "version": "1.0.0",
+  "displayName": "IUP Dialogue System",
+  "description": "*beep*",
+  "author": {
+    "name": "PostEnot",
+    "email": "ve.vyshegorodsky.cold@gmail.com",
+    "url": "https://t.me/ProcyonNihil"
+  },
+  "type": "library"
+}

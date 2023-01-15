@@ -1,0 +1,83 @@
+GridBackground {
+    --grid-background-color: rgb(40, 40, 40);
+    --line-color: rgba(193, 196, 192, 0.1);
+    --thick-line-color: rgba(193, 196, 192, 0.1);
+    --spacing: 15;
+}
+
+.iup-dialogue-node__main-container {
+    background-color: rgb(56, 56, 56);
+    opacity: 1;
+}
+
+.iup-dialogue-node__extension-container {
+    background-color: rgb(56, 56, 56);
+}
+
+.iup-dialogue-node__title-container {
+    background-color: rgb(0, 131, 255);
+    opacity: 1;
+    visibility: visible;
+    overflow: visible;
+    display: flex;
+}
+
+.iup-dialogue-node__input-container {
+}
+
+.iup-dialogue-node__output-container {
+    background-color: rgb(37, 37, 37);
+}
+
+.iup-panel-header {
+    background-color: rgb(37, 37, 37);
+    padding-left: 10px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-right: 1px;
+}
+
+.iup-dialogue-tree__inspector-field {
+    padding-left: 10px;
+    padding-right: 5px;
+    padding-top: 2px;
+    padding-bottom: 1px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+    margin-right: 0;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.iup-dialogue-node__name-field {
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.iup-dialogue-node__name-field #unity-text-input {
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    height: 20px;
+    align-items: stretch;
+    justify-content: center;
+    flex-grow: 0;
+}
+
+.iup-dialogue-node__name-field #unity-text-input:focus {
+    background-color: rgb(42, 42, 42);
+    border-left-color: rgb(13, 13, 13);
+    border-right-color: rgb(13, 13, 13);
+    border-top-color: rgb(13, 13, 13);
+    border-bottom-color: rgb(13, 13, 13);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+}

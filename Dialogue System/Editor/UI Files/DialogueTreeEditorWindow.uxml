@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Assets/DialogueTreeEditorWindow.uss?fileID=7433441132597879392&amp;guid=a87b7e62110624343865e3032e523ee3&amp;type=3#DialogueTreeEditorWindow" />
+    <IUP.Toolkits.DialogueSystem.Editor.TwoPaneSplitView orientation="Horizontal" fixed-pane-initial-dimension="300">
+        <ui:VisualElement name="variables-pane">
+            <ui:Label text="Variables" display-tooltip-when-elided="true" name="header" class="iup-panel-header" />
+        </ui:VisualElement>
+        <IUP.Toolkits.DialogueSystem.Editor.TwoPaneSplitView fixed-pane-index="1" fixed-pane-initial-dimension="350">
+            <IUP.Toolkits.DialogueSystem.Editor.DialogueTreeView focusable="true" name="dialogue-tree-view" style="flex-grow: 1;">
+                <ui:Label text="Viewport" display-tooltip-when-elided="true" name="header" class="iup-panel-header" />
+            </IUP.Toolkits.DialogueSystem.Editor.DialogueTreeView>
+            <ui:VisualElement name="inspector-pane">
+                <ui:Label text="Inspector" display-tooltip-when-elided="true" name="header" class="iup-panel-header" />
+            </ui:VisualElement>
+        </IUP.Toolkits.DialogueSystem.Editor.TwoPaneSplitView>
+    </IUP.Toolkits.DialogueSystem.Editor.TwoPaneSplitView>
+</ui:UXML>
