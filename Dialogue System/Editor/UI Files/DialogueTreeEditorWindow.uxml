@@ -1,15 +1,31 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
-    <Style src="project://database/Assets/DialogueTreeEditorWindow.uss?fileID=7433441132597879392&amp;guid=a87b7e62110624343865e3032e523ee3&amp;type=3#DialogueTreeEditorWindow" />
+    <Style src="project://database/Assets/Dialogue%20System%20UI/DialogueTreeEditorWindow.uss?fileID=7433441132597879392&amp;guid=361ac1c9ceb70164c8d0425b60637ec2&amp;type=3#DialogueTreeEditorWindow" />
+    <Style src="project://database/Assets/Dialogue%20System%20UI/DialogueTreeNode.uss?fileID=7433441132597879392&amp;guid=a1768c7f51d955c46a41fea2a3cf3132&amp;type=3#DialogueTreeNode" />
     <IUP.Toolkits.DialogueSystem.Editor.TwoPaneSplitView orientation="Horizontal" fixed-pane-initial-dimension="300">
-        <ui:VisualElement name="variables-pane">
-            <ui:Label text="Variables" display-tooltip-when-elided="true" name="header" class="iup-panel-header" />
+        <ui:VisualElement name="asset-data-pane">
+            <ui:Label tabindex="-1" text="Asset Data" display-tooltip-when-elided="true" name="header" class="iup-panel-header" />
+            <ui:Foldout text="Asset" name="asset-foldout" class="iup-pane-content-view__foldout">
+                <uie:ObjectField label="Editable Asset" name="editable-asset-field" />
+                <ui:Button text="Apply Changes" display-tooltip-when-elided="true" name="apply-changes-button" />
+                <ui:Button text="Cancel Changes" display-tooltip-when-elided="true" name="cancel-changes-button" />
+                <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); flex-direction: row;">
+                    <ui:Button text="Undo" display-tooltip-when-elided="true" name="undo" style="flex-grow: 1;" />
+                    <ui:Button text="Rendo" display-tooltip-when-elided="true" name="rendo" style="flex-grow: 1;" />
+                </ui:VisualElement>
+            </ui:Foldout>
+            <ui:Foldout text="Actors" name="actors-foldout" class="iup-pane-content-view__foldout">
+                <ui:ListView focusable="true" name="actors-list-view" show-border="true" reorderable="true" show-foldout-header="true" header-title="Actors" show-add-remove-footer="true" virtualization-method="DynamicHeight" />
+            </ui:Foldout>
+            <ui:Foldout text="Blackboard" name="blackboard-foldout" class="iup-pane-content-view__foldout" />
         </ui:VisualElement>
         <IUP.Toolkits.DialogueSystem.Editor.TwoPaneSplitView fixed-pane-index="1" fixed-pane-initial-dimension="350">
-            <IUP.Toolkits.DialogueSystem.Editor.DialogueTreeView focusable="true" name="dialogue-tree-view" style="flex-grow: 1;">
+            <ui:VisualElement name="dialogue-tree-view-pane" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
                 <ui:Label text="Viewport" display-tooltip-when-elided="true" name="header" class="iup-panel-header" />
-            </IUP.Toolkits.DialogueSystem.Editor.DialogueTreeView>
+                <IUP.Toolkits.DialogueSystem.Editor.DialogueTreeView focusable="true" name="dialogue-tree-view" style="flex-grow: 1;" />
+            </ui:VisualElement>
             <ui:VisualElement name="inspector-pane">
                 <ui:Label text="Inspector" display-tooltip-when-elided="true" name="header" class="iup-panel-header" />
+                <IUP.Toolkits.DialogueSystem.Editor.InspectorPaneContentView name="inspector-pane-content-view" />
             </ui:VisualElement>
         </IUP.Toolkits.DialogueSystem.Editor.TwoPaneSplitView>
     </IUP.Toolkits.DialogueSystem.Editor.TwoPaneSplitView>

@@ -1,9 +1,10 @@
 {
     "name": "iup.dialoguesystem.editor",
-    "rootNamespace": "",
+    "rootNamespace": "IUP.Toolkits.DialogueSystem.Editor",
     "references": [
         "GUID:eec0964c48f6f4e40bc3ec2257ccf8c5",
-        "GUID:0fbc35029aafb0047baab82efcae78a2"
+        "GUID:0fbc35029aafb0047baab82efcae78a2",
+        "GUID:23710380ea4a23940b8551abaac72858"
     ],
     "includePlatforms": [
         "Editor"

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -14,20 +14,114 @@ namespace IUP.Toolkits.DialogueSystem.Editor
 
         public DialogueTreeView()
         {
-            var gridBackground = new GridBackground();
-            Insert(0, gridBackground);
-            this.AddManipulator(new ContentZoomer());
-            this.AddManipulator(new ContentDragger());
-            this.AddManipulator(new SelectionDragger());
-            this.AddManipulator(new RectangleSelector());
+            InitBackground();
+            InitManipulators();
+            InitSystemNodes();
+
             StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
                 UI_FilePathes.USS_DialogueTreeEditorWindow);
-            CreateDefaultNodes();
             styleSheets.Add(styleSheet);
+
+            graphViewChanged += HandleGraphViewChange;
         }
 
-        public event Action<DialogueNode> NodeSelected;
-        public event Action<DialogueNode> NodeUnselected;
+        public EntryNode EntryNode { get; private set; }
+        public ExitNode ExitNode { get; private set; }
+        public GridBackground GridBackground { get; private set; }
+
+        private readonly HashSet<Edge> _removedEdgesInLastChange = new();
+
+        public event Action<BaseDialogueNode> NodeCreatedByUser;
+        public event Action<BaseDialogueNode> NodeDeletedByUser;
+        public event Action<BaseDialogueNode> NodePositionChanged;
+        public event Action<Edge> EdgeCreated;
+        public event Action<Edge> EdgeDeleted;
+        public event Action<Edge> EdgeReconnected;
+        public event Action<GraphElement> GraphElementSelected;
+        public event Action<GraphElement> GraphElementUnselected;
+        public event Action SelectionClear;
+
+        public override void AddToSelection(ISelectable selectable)
+        {
+            if (selectable is GraphElement graphElement)
+            {
+                GraphElementSelected?.Invoke(graphElement);
+            }
+            base.AddToSelection(selectable);
+        }
+
+        public override void ClearSelection()
+        {
+            SelectionClear?.Invoke();
+            base.ClearSelection();
+        }
+
+        public override void RemoveFromSelection(ISelectable selectable)
+        {
+            if (selectable is GraphElement graphElement)
+            {
+                GraphElementUnselected?.Invoke(graphElement);
+            }
+            base.RemoveFromSelection(selectable);
+        }
+
+        public override EventPropagation DeleteSelection()
+        {
+            foreach (ISelectable selectable in selection)
+            {
+                if ((selectable is not GraphElement graphElement) ||
+                    (!graphElement.capabilities.HasFlag(Capabilities.Deletable)))
+                {
+                    continue;
+                }
+
+                switch (selectable)
+                {
+                    case BaseDialogueNode dialogueTreeNode:
+                        NodeDeletedByUser?.Invoke(dialogueTreeNode);
+                        break;
+
+                    case Edge edge:
+                        EdgeDeleted?.Invoke(edge);
+                        break;
+                }
+            }
+            return base.DeleteSelection();
+        }
+
+        private GraphViewChange HandleGraphViewChange(GraphViewChange graphViewChange)
+        {
+            if (graphViewChange.edgesToCreate != null)
+            {
+                foreach (Edge createdEdge in graphViewChange.edgesToCreate)
+                {
+                    if (_removedEdgesInLastChange.Contains(createdEdge))
+                    {
+                        _ = _removedEdgesInLastChange.Remove(createdEdge);
+                        EdgeReconnected?.Invoke(createdEdge);
+                    }
+                    else
+                    {
+                        EdgeCreated?.Invoke(createdEdge);
+                    }
+                }
+            }
+
+            _removedEdgesInLastChange.Clear();
+            if (graphViewChange.elementsToRemove != null)
+            {
+                foreach (GraphElement removedGraphElement in graphViewChange.elementsToRemove)
+                {
+                    switch (removedGraphElement)
+                    {
+                        case Edge removedEdge:
+                            _ = _removedEdgesInLastChange.Add(removedEdge);
+                            break;
+                    }
+                }
+            }
+            return graphViewChange;
+        }
 
         public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
         {
@@ -39,47 +133,93 @@ namespace IUP.Toolkits.DialogueSystem.Editor
         public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
             evt.menu.AppendAction(
-                "Create Dialogue Node",
-                (context) => CreateDialogueNode(GetLocalMousePosition(context.eventInfo.mousePosition)));
+                "Add Speech Node",
+                (DropdownMenuAction context) =>
+                {
+                    Vector2 nodePosition = GetLocalMousePosition(context.eventInfo.mousePosition);
+                    SpeechNode speechNode = CreateSpeechNode(nodePosition, "Speech Node");
+                    NodeCreatedByUser?.Invoke(speechNode);
+                });
             evt.menu.AppendAction(
-                "Create Answer Node",
-                (context) => CreateAnswerNode(GetLocalMousePosition(context.eventInfo.mousePosition)));
+                "Add Answer Node",
+                (DropdownMenuAction context) =>
+                {
+                    Vector2 nodePosition = GetLocalMousePosition(context.eventInfo.mousePosition);
+                    AnswerNode answerNode = CreateAnswerNode(nodePosition, "Answer Node");
+                    NodeCreatedByUser?.Invoke(answerNode);
+                });
         }
 
-        private void CreateDialogueNode(Vector2 position)
+        public SpeechNode CreateSpeechNode(Vector2 position, string title)
         {
-            var dialogueNode = new DialogueNode();
-            dialogueNode.Selected += OnNodeSelected;
-            dialogueNode.Unselected += OnNodeUnselected;
-            AddElement(dialogueNode);
-            dialogueNode.SetPosition(new(position, Vector2.zero));
+            SpeechNode speechNode = new(position, title);
+            AddElement(speechNode);
+            speechNode.PositionChanged += OnNodePositionChanged;
+            return speechNode;
         }
 
-        private void CreateAnswerNode(Vector2 position)
+        public AnswerNode CreateAnswerNode(Vector2 position, string title)
         {
-            var answerNode = new AnswerNode();
+            AnswerNode answerNode = new(position, title);
             AddElement(answerNode);
-            answerNode.SetPosition(new(position, Vector2.zero));
+            answerNode.PositionChanged += OnNodePositionChanged;
+            answerNode.AnswerPortRemoved += DeleteEdgesConnectedWithDeletedPort;
+            return answerNode;
         }
 
-        private void CreateDefaultNodes()
+        private void DeleteEdgesConnectedWithDeletedPort(
+            AnswerNode answerNode,
+            int answerVariantPortIndex,
+            AnswerVariantPort deletedAnswerVariantPort)
         {
-            var enterNode = new EnterNode();
-            AddElement(enterNode);
-            enterNode.SetPosition(new(100, 500, 0, 0));
-            var exitNode = new ExitNode();
+            foreach (Edge edge in deletedAnswerVariantPort.connections)
+            {
+                edge.input.Disconnect(edge);
+                RemoveElement(edge);
+            }
+            deletedAnswerVariantPort.DisconnectAll();
+        }
+
+        private ExitNode CreateExitNode(Vector2 position)
+        {
+            ExitNode exitNode = new(position);
             AddElement(exitNode);
-            exitNode.SetPosition(new(800, 500, 0, 0));
+            exitNode.PositionChanged += OnNodePositionChanged;
+            return exitNode;
         }
 
-        private void OnNodeSelected(DialogueNode dialogueNode)
+        private EntryNode CreateEntryNode(Vector2 position)
         {
-            NodeSelected?.Invoke(dialogueNode);
+            EntryNode entryNode = new(position);
+            AddElement(entryNode);
+            entryNode.PositionChanged += OnNodePositionChanged;
+            return entryNode;
         }
 
-        private void OnNodeUnselected(DialogueNode dialogueNode)
+
+        private void InitSystemNodes()
         {
-            NodeUnselected?.Invoke(dialogueNode);
+            EntryNode = CreateEntryNode(default);
+            ExitNode = CreateExitNode(default);
+        }
+
+        private void InitManipulators()
+        {
+            this.AddManipulator(new ContentZoomer());
+            this.AddManipulator(new ContentDragger());
+            this.AddManipulator(new SelectionDragger());
+            this.AddManipulator(new RectangleSelector());
+        }
+
+        private void InitBackground()
+        {
+            GridBackground gridBackground = new();
+            Insert(0, gridBackground);
+        }
+
+        private void OnNodePositionChanged(BaseDialogueNode node)
+        {
+            NodePositionChanged?.Invoke(node);
         }
 
         private Vector2 GetLocalMousePosition(Vector2 mousePosition)

@@ -1,48 +1,145 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.Experimental.GraphView;
 
 namespace IUP.Toolkits.DialogueSystem.Editor
 {
-    public sealed class AnswerNode : BaseDialogueTreeNode
+    public sealed class AnswerNode : BaseDialogueNode
     {
         public AnswerNode() : base()
         {
+            AnswerPorts = new ReadOnlyCollection<AnswerVariantPort>(_answerVariantPorts);
+            InitAnswerControlButtons();
             InitInputPort();
-            InitOutputPort();
-            InstantiateNameField();
-            style.width = 150;
-            style.height = 75;
-            titleContainer.style.backgroundColor = new Color(42f / 255f, 65f / 255f, 97f / 255f, 1f);
+            InitEditableTitleField();
+            AddToClassList(AnserNodeUssClassName);
         }
 
-        private void InstantiateNameField()
+        public AnswerNode(Vector2 position, string title) : this()
         {
-            var field = new TextField()
+            Rect rectPosition = new(position, Vector2.zero);
+            SetPositionWithoutNotify(rectPosition);
+            _editableTitleField.SetValueWithoutNotify(title);
+        }
+
+        public static readonly string AnserNodeUssClassName = "iup-answer-node";
+
+        public string Title
+        {
+            get => _editableTitleField.value;
+            set => _editableTitleField.value = value;
+        }
+        public InputDialoguePort InputPort { get; private set; }
+        public ReadOnlyCollection<AnswerVariantPort> AnswerPorts { get; }
+
+        private TextField _editableTitleField;
+        private VisualElement _answerControlButtonsBlock;
+        private readonly List<AnswerVariantPort> _answerVariantPorts = new();
+
+        public event Action<AnswerNode, int> AnswerPortAdded;
+        public event Action<AnswerNode, int, AnswerVariantPort> AnswerPortRemoved;
+        public event Action<AnswerNode, int, int> AnswerPortPositionChanged;
+        public event Action<AnswerNode, ChangeEvent<string>> TitleChanged;
+        public event Action<AnswerNode, int, ChangeEvent<string>> AnswerPortTitleChanged;
+
+        public void AddAnswerPort(string answerTitle = "")
+        {
+            AnswerVariantPort addedPort = new(Orientation.Horizontal, Port.Capacity.Single)
             {
-                label = "",
-                value = "Possible Answers"
+                Title = answerTitle
             };
-            field.AddToClassList("iup-dialogue-node__name-field");
-            inputContainer.AddToClassList("iup-answer-node__input-container");
-            outputContainer.AddToClassList("iup-answer-node__output-container");
-            titleContainer.Insert(0, field);
+            addedPort.DeleteButtonClicked += DeleteAnswerPort;
+            addedPort.MoveUpReorderButtonClicked += MoveAnswerVariantPortUp;
+            addedPort.MoveDownReorderButtonClicked += MoveAnswerVariantPortDown;
+            addedPort.TitleChanged += InvokeAnswerPortTitleChangedEvent;
+            outputContainer.Insert(outputContainer.childCount - 1, addedPort);
+            _answerVariantPorts.Add(addedPort);
+            AnswerPortAdded?.Invoke(this, _answerVariantPorts.Count - 1);
+        }
+
+        public void DeleteAnswerPort(AnswerVariantPort deletedPort)
+        {
+            deletedPort.DeleteButtonClicked -= DeleteAnswerPort;
+            deletedPort.MoveUpReorderButtonClicked -= MoveAnswerVariantPortUp;
+            deletedPort.MoveDownReorderButtonClicked -= MoveAnswerVariantPortDown;
+            deletedPort.TitleChanged -= InvokeAnswerPortTitleChangedEvent;
+            outputContainer.Remove(deletedPort);
+            int removedPortIndex = _answerVariantPorts.IndexOf(deletedPort);
+            _ = _answerVariantPorts.Remove(deletedPort);
+            AnswerPortRemoved?.Invoke(this, removedPortIndex, deletedPort);
+        }
+
+        private void InvokeAnswerPortTitleChangedEvent(
+            AnswerVariantPort answerVariantPort,
+            ChangeEvent<string> context)
+        {
+            int answerVariantPortIndex = _answerVariantPorts.IndexOf(answerVariantPort);
+            AnswerPortTitleChanged?.Invoke(this, answerVariantPortIndex, context);
+        }
+
+        private void MoveAnswerVariantPortUp
+            (AnswerVariantPort reorderAnswerVariantPort)
+        {
+            int reorderPortIndex = _answerVariantPorts.IndexOf(reorderAnswerVariantPort);
+            if (reorderPortIndex > 0)
+            {
+                int newPortIndex = reorderPortIndex - 1;
+                ChangeAnswerPortPosition(reorderPortIndex, newPortIndex);
+            }
+        }
+
+        private void MoveAnswerVariantPortDown(
+            AnswerVariantPort reorderAnswerVariantPort)
+        {
+            int reorderPortIndex = _answerVariantPorts.IndexOf(reorderAnswerVariantPort);
+            int bottomAnswerPortIndex = _answerVariantPorts.Count - 1;
+            if (reorderPortIndex < bottomAnswerPortIndex)
+            {
+                int newPortIndex = reorderPortIndex + 1;
+                ChangeAnswerPortPosition(reorderPortIndex, newPortIndex);
+            }
+        }
+
+        private void InvokeTitleChangedEvent(ChangeEvent<string> context)
+        {
+            TitleChanged?.Invoke(this, context);
+        }
+
+        private void ChangeAnswerPortPosition(int from, int to)
+        {
+            AnswerVariantPort reorderPort = _answerVariantPorts[from];
+            _answerVariantPorts.MoveItemFromTo(from, to);
+            outputContainer.RemoveAt(from);
+            outputContainer.Insert(to, reorderPort);
+            AnswerPortPositionChanged?.Invoke(this, from, to);
+        }
+
+        private void InitEditableTitleField()
+        {
+            _editableTitleField = NodeUtils.CreateNodeEditableTitleField("Answer Choice Node");
+            _editableTitleField.RegisterValueChangedCallback(InvokeTitleChangedEvent);
+            titleContainer.Insert(0, _editableTitleField);
+        }
+
+        private void InitAnswerControlButtons()
+        {
+            _answerControlButtonsBlock = new();
+            Button addAnswerButton = new()
+            {
+                text = "+"
+            };
+            addAnswerButton.clicked += () => AddAnswerPort("Lotreamon");
+            _answerControlButtonsBlock.Add(addAnswerButton);
+            outputContainer.Add(_answerControlButtonsBlock);
         }
 
         private void InitInputPort()
         {
-            InputDialoguePort inputPort = InstantiateInputDialoguePort();
-            inputContainer.Add(inputPort);
-        }
-
-        private void InitOutputPort()
-        {
-            //OutputDialoguePort outputPort = InstantiateOutputDialoguePort();
-            var outputPort = new OutputAnswerPort(Orientation.Horizontal, Port.Capacity.Single)
-            {
-                portName = ""
-            };
-            outputContainer.Add(outputPort);
+            InputPort = NodeUtils.CreateInputDialoguePort();
+            inputContainer.Add(InputPort);
         }
     }
 }

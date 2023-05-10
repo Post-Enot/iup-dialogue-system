@@ -1,4 +1,4 @@
-namespace IUP.Toolkits.DialogueSystem.Editor
+﻿namespace IUP.Toolkits.DialogueSystem.Editor
 {
     public static class UI_FilePathes
     {

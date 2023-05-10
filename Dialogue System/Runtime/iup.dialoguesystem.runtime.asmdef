@@ -1,6 +1,6 @@
 {
     "name": "iup.dialoguesystem.runtime",
-    "rootNamespace": "",
+    "rootNamespace": "IUP.Toolkits.DialogueSystem",
     "references": [
         "GUID:eec0964c48f6f4e40bc3ec2257ccf8c5",
         "GUID:23710380ea4a23940b8551abaac72858"

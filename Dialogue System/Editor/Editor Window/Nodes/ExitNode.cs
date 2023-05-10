@@ -1,29 +1,51 @@
+﻿using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 namespace IUP.Toolkits.DialogueSystem.Editor
 {
-    public class ExitNode : BaseDialogueTreeNode
+    public sealed class ExitNode : BaseDialogueNode
     {
         public ExitNode() : base()
         {
-            InitInputPort();
-            InstantiateNameLabel();
-            titleContainer.style.backgroundColor = new Color(143f / 255f, 25f / 255f, 25f / 255f, 1f);
+            title = "Exit";
             titleButtonContainer.Clear();
-            style.width = 75;
-            style.height = 75;
-            AddToClassList("iup-exit-node");
+
+            MakeInputOnly();
+            MakeUndeletable();
+            InitInputPort();
+            InitStyleClasses();
         }
+
+        public ExitNode(Vector2 position) : this()
+        {
+            Rect positionRect = new(position, Vector2.zero);
+            SetPositionWithoutNotify(positionRect);
+        }
+
+        public static readonly string ExitNodeUssClassName = "iup-exit-node";
+
+        public InputDialoguePort InputPort { get; private set; }
 
         private void InitInputPort()
         {
-            InputDialoguePort inputPort = InstantiateInputDialoguePort();
-            inputContainer.Add(inputPort);
+            InputPort = NodeUtils.CreateInputDialoguePort();
+            inputContainer.Add(InputPort);
         }
 
-        private void InstantiateNameLabel()
+        private void MakeInputOnly()
         {
-            title = "Exit";
+            topContainer.Remove(outputContainer);
+            topContainer.Remove(PortContainersDivider);
+        }
+
+        private void MakeUndeletable()
+        {
+            capabilities &= ~Capabilities.Deletable;
+        }
+
+        private void InitStyleClasses()
+        {
+            AddToClassList(ExitNodeUssClassName);
         }
     }
 }
